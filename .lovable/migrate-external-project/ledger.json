@@ -1,0 +1,58 @@
+[
+ {
+  "capability": "code: storefront (order form, hero, features, FAQ, payment view)",
+  "source": "Next.js app/page.tsx + components/site",
+  "outcome": "migrate",
+  "status": "verified",
+  "next_action": "none"
+ },
+ {
+  "capability": "code: admin panel (orders, vouchers, settings)",
+  "source": "app/admin",
+  "outcome": "migrate",
+  "status": "implemented",
+  "next_action": "Verify signed-in admin pages once ADMIN_PASSWORD is set"
+ },
+ {
+  "capability": "schema: settings, vouchers, orders, qris image",
+  "source": "Drizzle + Postgres (DATABASE_URL)",
+  "outcome": "migrate to Lovable Cloud",
+  "status": "verified",
+  "next_action": "none"
+ },
+ {
+  "capability": "records: existing orders/vouchers/settings",
+  "source": "Postgres",
+  "outcome": "migrate",
+  "status": "pending",
+  "next_action": "Request CSV export after preview"
+ },
+ {
+  "capability": "auth: admin password (ADMIN_PASSWORD, signed cookie)",
+  "source": "lib/admin-auth.ts",
+  "outcome": "keep shared admin password, signed session cookie",
+  "status": "pending",
+  "next_action": "User sets ADMIN_PASSWORD secret"
+ },
+ {
+  "capability": "storage: QRIS image upload",
+  "source": "bytea table + /api/qris",
+  "outcome": "Lovable Cloud storage bucket",
+  "status": "verified",
+  "next_action": "none"
+ },
+ {
+  "capability": "analytics: Vercel Analytics",
+  "source": "@vercel/analytics",
+  "outcome": "drop (Vercel-only)",
+  "status": "accepted",
+  "next_action": "none"
+ },
+ {
+  "capability": "new: new-member 10% claim, working vouchers, admin price editor",
+  "source": "user request",
+  "outcome": "build",
+  "status": "verified",
+  "next_action": "none"
+ }
+]

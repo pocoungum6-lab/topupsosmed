@@ -1,23 +1,57 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
+import { SiteHeader } from "@/components/site/site-header";
+import { Hero } from "@/components/site/hero";
+import { OrderForm } from "@/components/site/order-form";
+import { Features } from "@/components/site/features";
+import { Faq } from "@/components/site/faq";
+import { SiteFooter } from "@/components/site/site-footer";
+import { getStorefront } from "@/lib/shop.functions";
 
-// The home route ships no og:image, so serve-time hosting can inject the
-// project's social preview (explicit og:image or latest screenshot).
+const storefrontQuery = queryOptions({
+  queryKey: ["storefront"],
+  queryFn: () => getStorefront(),
+});
+
 export const Route = createFileRoute("/")({
+  head: () => ({
+    meta: [
+      { title: "TopupSosmed - Topup Sosmed Terpercaya Sejak 2016" },
+      {
+        name: "description",
+        content:
+          "Tambah followers, likes, views, repost, share & save Instagram, TikTok, Facebook, Shopee. Proses cepat, tanpa password, bayar QRIS.",
+      },
+      { property: "og:title", content: "TopupSosmed - Topup Sosmed Terpercaya Sejak 2016" },
+      {
+        property: "og:description",
+        content:
+          "Followers, like & view Instagram, TikTok, Facebook, Shopee. Cepat, tanpa password, bayar QRIS.",
+      },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
+    ],
+  }),
+  loader: ({ context }) => context.queryClient.ensureQueryData(storefrontQuery),
   component: Index,
 });
 
-// IMPORTANT: Replace this placeholder. See ./README.md for routing conventions.
 function Index() {
+  const { data } = useSuspenseQuery(storefrontQuery);
   return (
-    <div
-      className="flex min-h-screen items-center justify-center"
-      style={{ backgroundColor: "#fcfbf8" }}
-    >
-      <img
-        data-lovable-blank-page-placeholder="REMOVE_THIS"
-        src="https://cdn.gpteng.co/blank-app-v1.svg"
-        alt="Your app will live here!"
-      />
-    </div>
+    <>
+      <SiteHeader />
+      <main>
+        <Hero />
+        <OrderForm
+          prices={data.prices}
+          adminWhatsapp={data.whatsapp}
+          qrisImageSrc={data.qrisImageSrc}
+        />
+        <Features />
+        <Faq />
+      </main>
+      <SiteFooter whatsapp={data.whatsapp} />
+    </>
   );
 }
