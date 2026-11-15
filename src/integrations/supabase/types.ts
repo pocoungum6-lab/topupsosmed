@@ -30,6 +30,7 @@ export type Database = {
           subtotal: number
           target: string
           total: number
+          unique_code: number
           updated_at: string
           voucher_code: string | null
           whatsapp: string
@@ -49,6 +50,7 @@ export type Database = {
           subtotal: number
           target: string
           total: number
+          unique_code?: number
           updated_at?: string
           voucher_code?: string | null
           whatsapp: string
@@ -68,6 +70,7 @@ export type Database = {
           subtotal?: number
           target?: string
           total?: number
+          unique_code?: number
           updated_at?: string
           voucher_code?: string | null
           whatsapp?: string
@@ -191,6 +194,7 @@ export type Database = {
           subtotal: number
           target: string
           total: number
+          unique_code: number
           updated_at: string
           voucher_code: string | null
           whatsapp: string

@@ -26,6 +26,7 @@ export type AdminOrder = {
   whatsapp: string;
   subtotal: number;
   discount: number;
+  unique_code: number;
   total: number;
   voucher_code: string | null;
   promo: string | null;
@@ -44,7 +45,7 @@ const STATUS_STYLES: Record<string, string> = {
 
 function followUpMessage(order: AdminOrder, serviceLabel: string) {
   const intro: Record<string, string> = {
-    pending: `Halo kak, kami dari TopupSosmed. Pesanan *${order.order_code}* (${serviceLabel} ${formatNumber(order.quantity)}) senilai *${formatRupiah(order.total)}* belum terbayar. Silakan scan QRIS di website lalu kirim bukti bayarnya ya kak.`,
+    pending: `Halo kak, kami dari TopupSosmed. Pesanan *${order.order_code}* (${serviceLabel} ${formatNumber(order.quantity)}) senilai *${formatRupiah(order.total)}* belum terbayar. Mohon transfer tepat sesuai nominal (termasuk kode unik) via QRIS di website lalu kirim bukti bayarnya ya kak.`,
     paid: `Halo kak, pembayaran pesanan *${order.order_code}* sudah kami terima. Pesanan akan segera diproses ya kak.`,
     processing: `Halo kak, pesanan *${order.order_code}* (${serviceLabel} ${formatNumber(order.quantity)}) sedang diproses. Mohon akun/postingan tidak di-private ya kak.`,
     done: `Halo kak, pesanan *${order.order_code}* sudah selesai. Terima kasih sudah order di TopupSosmed!`,
@@ -123,6 +124,11 @@ export function OrderCard({ order }: { order: AdminOrder }) {
             <span className="ml-2 text-xs font-medium text-muted-foreground">
               ({promoLabel({ promo: order.promo, voucherCode: order.voucher_code })} -
               {formatRupiah(order.discount)})
+            </span>
+          )}
+          {order.unique_code > 0 && (
+            <span className="ml-2 text-xs font-medium text-muted-foreground">
+              (kode unik +{formatRupiah(order.unique_code)})
             </span>
           )}
         </dd>

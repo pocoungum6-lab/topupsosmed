@@ -136,6 +136,7 @@ export type CreatedOrder = {
   whatsapp: string;
   subtotal: number;
   discount: number;
+  uniqueCode: number;
   total: number;
   voucherCode: string | null;
   promo: string | null;
@@ -206,6 +207,7 @@ export const createOrder = createServerFn({ method: "POST" })
           whatsapp: row.whatsapp,
           subtotal: row.subtotal,
           discount: row.discount,
+          uniqueCode: row.unique_code,
           total: row.total,
           voucherCode: row.voucher_code,
           promo: row.promo,

@@ -553,6 +553,7 @@ export function OrderForm({
                   </span>
                 )}
               </span>
+              <span className="text-[11px] text-muted-foreground">+ kode unik saat bayar</span>
             </div>
             <Button
               type="button"

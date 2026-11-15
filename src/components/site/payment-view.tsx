@@ -40,6 +40,7 @@ export function PaymentView({
     `Jumlah: ${formatNumber(order.quantity)}`,
     `Target: ${order.target}`,
     order.discount > 0 ? `${promoLabel(order)}: -${formatRupiah(order.discount)}` : null,
+    order.uniqueCode > 0 ? `Kode Unik: +${formatRupiah(order.uniqueCode)}` : null,
     `Total: ${formatRupiah(order.total)}`,
     "",
     "Berikut bukti pembayaran QRIS saya.",
@@ -60,6 +61,7 @@ export function PaymentView({
     ["Subtotal", formatRupiah(order.subtotal)],
   ];
   if (order.discount > 0) rows.push([promoLabel(order), `-${formatRupiah(order.discount)}`]);
+  if (order.uniqueCode > 0) rows.push(["Kode Unik", `+${formatRupiah(order.uniqueCode)}`]);
 
   return (
     <div className="mx-auto flex max-w-md flex-col gap-4">
@@ -78,6 +80,13 @@ export function PaymentView({
           </span>
           <span className="text-lg font-extrabold text-primary">{formatRupiah(order.total)}</span>
         </div>
+        {order.uniqueCode > 0 && (
+          <p className="mb-3 rounded-lg bg-warning/20 px-3 py-2 text-xs font-medium text-warning-foreground">
+            Transfer <b>tepat {formatRupiah(order.total)}</b> sampai 3 digit terakhir. Kode unik
+            (+{formatRupiah(order.uniqueCode)}) membantu kami mengecek pembayaranmu dan
+            mencegah bukti transfer palsu.
+          </p>
+        )}
         {qrisImageSrc ? (
           <div className="flex justify-center rounded-xl bg-qr-surface p-3">
             <img
