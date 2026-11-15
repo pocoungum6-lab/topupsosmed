@@ -85,6 +85,51 @@ const save: Service = {
 
 export const SERVICES: Service[] = [followers, likes, views, repost, share, save];
 
+/** Pilihan nominal per layanan (berlaku di semua platform). Diatur admin di menu Pengaturan. */
+export type NominalTable = Record<ServiceId, number[]>;
+
+export const DEFAULT_NOMINALS: NominalTable = {
+  followers: FOLLOWER_NOMINALS,
+  likes: ENGAGEMENT_NOMINALS,
+  views: VIEW_NOMINALS,
+  repost: ENGAGEMENT_NOMINALS,
+  share: ENGAGEMENT_NOMINALS,
+  save: ENGAGEMENT_NOMINALS,
+};
+
+export const MAX_NOMINAL_OPTIONS = 30;
+export const MAX_NOMINAL_VALUE = 10_000_000;
+
+export function nominalsFor(table: NominalTable | undefined, serviceId: ServiceId) {
+  const list = table?.[serviceId];
+  return list && list.length > 0 ? list : DEFAULT_NOMINALS[serviceId];
+}
+
+/**
+ * Ubah teks admin seperti "100, 200, 1.000" jadi daftar nominal urut tanpa duplikat.
+ * Titik dianggap pemisah ribuan. Mengembalikan pesan error jika ada isian yang salah.
+ */
+export function parseNominalList(
+  text: string,
+): { ok: true; values: number[] } | { ok: false; error: string } {
+  const parts = text
+    .split(/[\s,;]+/)
+    .map((p) => p.replace(/\./g, ""))
+    .filter(Boolean);
+  if (parts.length === 0) return { ok: false, error: "Isi minimal 1 nominal." };
+  const values = new Set<number>();
+  for (const part of parts) {
+    if (!/^\d+$/.test(part)) return { ok: false, error: `"${part}" bukan angka.` };
+    const n = Number(part);
+    if (n < 1 || n > MAX_NOMINAL_VALUE)
+      return { ok: false, error: `Nominal harus antara 1 dan ${formatNumber(MAX_NOMINAL_VALUE)}.` };
+    values.add(n);
+  }
+  if (values.size > MAX_NOMINAL_OPTIONS)
+    return { ok: false, error: `Maksimal ${MAX_NOMINAL_OPTIONS} pilihan nominal.` };
+  return { ok: true, values: [...values].sort((a, b) => a - b) };
+}
+
 export const DEFAULT_PRICES: PriceTable = {
   followers: [10000, 25000, 50000],
   likes: [3000, 6000, 12000],

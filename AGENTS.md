@@ -33,5 +33,6 @@ use the editor.
 - All database access goes through server functions using the service-role client; tables have RLS with no client policies (except public read on prices/settings) because shoppers are anonymous and admin uses a shared password.
 - Admin auth is a single shared password (ADMIN_PASSWORD secret) with an HMAC-signed httpOnly cookie (`src/lib/admin-auth.server.ts`); why: carried over from the original app, no per-user accounts needed.
 - Orders are placed via the `place_order` SQL function so voucher quota claims and the new-member check are atomic.
+- Nominal options per service are stored as JSON in the `settings` table (key `nominals`), parsed/validated by `parseNominalList` in `catalog.ts`; why: no schema change needed and server re-checks quantities against it.
 - Prices live in `service_prices` (per service, per category A/B/C, per 100 units); `src/lib/catalog.ts` holds the catalog structure and promo constants shared by client and server.
 - QRIS uploads go to the private `qris` storage bucket and are served by `/api/public/qris`; why: public buckets are blocked.

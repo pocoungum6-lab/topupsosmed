@@ -1,6 +1,14 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { ORDER_STATUSES, SERVICES, isValidWhatsapp, normalizeWhatsapp } from "./catalog";
+import {
+  MAX_NOMINAL_OPTIONS,
+  MAX_NOMINAL_VALUE,
+  ORDER_STATUSES,
+  SERVICES,
+  isValidWhatsapp,
+  normalizeWhatsapp,
+  parseNominalList,
+} from "./catalog";
 
 async function guard() {
   const { assertAdmin } = await import("./admin-auth.server");
@@ -132,9 +140,9 @@ export const createVoucher = createServerFn({ method: "POST" })
   )
   .handler(async ({ data }): Promise<FormResult> => {
     const db = await guard();
-    const code = data.code.trim().toUpperCase();
+    const code = data.code.toUpperCase().replace(/[^A-Z0-9_-]/g, "");
     if (!/^[A-Z0-9_-]{3,40}$/.test(code)) {
-      return { ok: false, message: "Kode 3-40 karakter (huruf, angka, - atau _)." };
+      return { ok: false, message: "Kode minimal 3 huruf/angka, contoh: DISKON50." };
     }
     if (data.value <= 0) return { ok: false, message: "Nilai diskon wajib diisi." };
     if (data.type === "percent" && data.value > 100)
@@ -263,6 +271,37 @@ export const saveQrisUrl = createServerFn({ method: "POST" })
     await setSetting("qris_url", parsed.toString());
     await setSetting("qris_source", "url");
     return { ok: true, message: "QRIS dari link berhasil disimpan." };
+  });
+
+export const saveNominals = createServerFn({ method: "POST" })
+  .validator((d) =>
+    z
+      .object({
+        rows: z
+          .array(
+            z.object({
+              serviceId: z.enum(SERVICES.map((s) => s.id) as [string, ...string[]]),
+              nominals: z
+                .array(z.number().int().min(1).max(MAX_NOMINAL_VALUE))
+                .min(1)
+                .max(MAX_NOMINAL_OPTIONS),
+            }),
+          )
+          .max(SERVICES.length),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data }): Promise<FormResult> => {
+    await guard();
+    const { loadSettings, setSetting } = await import("./store.server");
+    const table = { ...(await loadSettings()).nominals };
+    for (const row of data.rows) {
+      const parsed = parseNominalList(row.nominals.join(","));
+      if (!parsed.ok) return { ok: false, message: parsed.error };
+      table[row.serviceId as keyof typeof table] = parsed.values;
+    }
+    await setSetting("nominals", JSON.stringify(table));
+    return { ok: true, message: "Pilihan nominal tersimpan dan langsung tampil di website." };
   });
 
 const ALLOWED_TYPES = ["image/png", "image/jpeg", "image/webp"];

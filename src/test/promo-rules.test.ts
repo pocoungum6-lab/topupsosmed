@@ -24,3 +24,19 @@ describe("promo rules", () => {
     expect(priceFor(prices, "followers", "B", 200)).toBe(60_000);
   });
 });
+
+import { parseNominalList, nominalsFor } from "@/lib/catalog";
+
+describe("nominal options set by admin", () => {
+  it("reads '100, 200, 1.000' with dot as thousands separator, sorted and unique", () => {
+    expect(parseNominalList("1.000, 200 100,200")).toEqual({ ok: true, values: [100, 200, 1000] });
+  });
+
+  it("rejects text that is not a number", () => {
+    expect(parseNominalList("100, abc").ok).toBe(false);
+  });
+
+  it("falls back to the default list when a service has no saved nominals", () => {
+    expect(nominalsFor(undefined, "views")[0]).toBe(1000);
+  });
+});

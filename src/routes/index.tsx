@@ -6,6 +6,7 @@ import { OrderForm } from "@/components/site/order-form";
 import { Features } from "@/components/site/features";
 import { Faq } from "@/components/site/faq";
 import { SiteFooter } from "@/components/site/site-footer";
+import { OrderNotification } from "@/components/site/order-notification";
 import { getStorefront } from "@/lib/shop.functions";
 
 const storefrontQuery = queryOptions({
@@ -45,6 +46,7 @@ function Index() {
         <Hero />
         <OrderForm
           prices={data.prices}
+          nominals={data.nominals}
           adminWhatsapp={data.whatsapp}
           qrisImageSrc={data.qrisImageSrc}
         />
@@ -52,6 +54,7 @@ function Index() {
         <Faq />
       </main>
       <SiteFooter whatsapp={data.whatsapp} />
+      <OrderNotification nominals={data.nominals} />
     </>
   );
 }

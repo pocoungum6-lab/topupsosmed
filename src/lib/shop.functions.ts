@@ -6,7 +6,9 @@ import {
   getService,
   isValidWhatsapp,
   normalizeWhatsapp,
+  nominalsFor,
   priceFor,
+  type NominalTable,
   type PriceTable,
   type QualityId,
   type ServiceId,
@@ -22,11 +24,20 @@ const selectionSchema = z.object({
 
 type Selection = z.infer<typeof selectionSchema>;
 
-function computeSubtotal(prices: PriceTable, input: Selection) {
+async function loadCatalogData() {
+  const { loadPrices, loadSettings } = await import("./store.server");
+  const [prices, settings] = await Promise.all([loadPrices(), loadSettings()]);
+  return { prices, nominals: settings.nominals };
+}
+
+function computeSubtotal(
+  { prices, nominals }: { prices: PriceTable; nominals: NominalTable },
+  input: Selection,
+) {
   const service = getService(input.platform, input.service);
   const quality = getQuality(input.quality);
   if (!service || !quality) return { ok: false as const, error: "Layanan tidak valid." };
-  if (!service.nominals.includes(input.quantity))
+  if (!nominalsFor(nominals, service.id).includes(input.quantity))
     return { ok: false as const, error: "Nominal tidak valid." };
   return {
     ok: true as const,
@@ -37,7 +48,12 @@ function computeSubtotal(prices: PriceTable, input: Selection) {
 export const getStorefront = createServerFn({ method: "GET" }).handler(async () => {
   const { loadPrices, loadSettings } = await import("./store.server");
   const [prices, settings] = await Promise.all([loadPrices(), loadSettings()]);
-  return { prices, whatsapp: settings.whatsapp, qrisImageSrc: settings.qrisImageSrc };
+  return {
+    prices,
+    nominals: settings.nominals,
+    whatsapp: settings.whatsapp,
+    qrisImageSrc: settings.qrisImageSrc,
+  };
 });
 
 export type VoucherCheckResult =
@@ -46,10 +62,9 @@ export type VoucherCheckResult =
 export const checkVoucher = createServerFn({ method: "POST" })
   .validator((d) => selectionSchema.extend({ code: z.string().max(60) }).parse(d))
   .handler(async ({ data }): Promise<VoucherCheckResult> => {
-    const code = data.code.trim().toUpperCase();
+    const code = data.code.toUpperCase().replace(/[^A-Z0-9_-]/g, "");
     if (!code) return { ok: false, error: "Masukkan kode voucher." };
-    const { loadPrices } = await import("./store.server");
-    const price = computeSubtotal(await loadPrices(), data);
+    const price = computeSubtotal(await loadCatalogData(), data);
     if (!price.ok) return price;
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -149,8 +164,7 @@ export const createOrder = createServerFn({ method: "POST" })
   )
   .handler(
     async ({ data }): Promise<{ ok: true; order: CreatedOrder } | { ok: false; error: string }> => {
-      const { loadPrices } = await import("./store.server");
-      const price = computeSubtotal(await loadPrices(), data);
+      const price = computeSubtotal(await loadCatalogData(), data);
       if (!price.ok) return price;
 
       const target = data.target.trim();
@@ -158,7 +172,7 @@ export const createOrder = createServerFn({ method: "POST" })
       const whatsapp = normalizeWhatsapp(data.whatsapp);
       if (!isValidWhatsapp(whatsapp)) return { ok: false, error: "Nomor WhatsApp tidak valid." };
 
-      const voucherCode = data.voucherCode?.trim().toUpperCase() || "";
+      const voucherCode = data.voucherCode?.toUpperCase().replace(/[^A-Z0-9_-]/g, "") || "";
       const newMemberPercent = !voucherCode && data.newMember ? NEW_MEMBER_PERCENT : 0;
 
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");

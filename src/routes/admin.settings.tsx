@@ -2,17 +2,25 @@ import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { queryOptions, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Link2, Loader2, MessageCircle, QrCode, Upload } from "lucide-react";
+import { Hash, Link2, Loader2, MessageCircle, QrCode, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   getAdminSettings,
+  saveNominals,
   saveQrisUrl,
   updateWhatsapp,
   uploadQris,
   type FormResult,
 } from "@/lib/admin.functions";
+import {
+  SERVICES,
+  formatNumber,
+  parseNominalList,
+  type NominalTable,
+  type ServiceId,
+} from "@/lib/catalog";
 import { cn } from "@/lib/utils";
 
 const settingsQuery = queryOptions({
@@ -25,9 +33,12 @@ export const Route = createFileRoute("/admin/settings")({
   head: () => ({
     meta: [
       { title: "Pengaturan - Admin TopupSosmed" },
-      { name: "description", content: "Ubah nomor WhatsApp dan gambar QRIS TopupSosmed." },
+      { name: "description", content: "Ubah nomor WhatsApp, QRIS dan pilihan nominal TopupSosmed." },
       { property: "og:title", content: "Pengaturan - Admin TopupSosmed" },
-      { property: "og:description", content: "Ubah nomor WhatsApp dan gambar QRIS TopupSosmed." },
+      {
+        property: "og:description",
+        content: "Ubah nomor WhatsApp, QRIS dan pilihan nominal TopupSosmed.",
+      },
     ],
   }),
   component: AdminSettingsPage,
@@ -48,13 +59,14 @@ function AdminSettingsPage() {
       <div>
         <h1 className="text-2xl font-extrabold tracking-tight">Pengaturan</h1>
         <p className="text-sm text-muted-foreground">
-          Ubah nomor WhatsApp konfirmasi dan gambar QRIS tanpa coding.
+          Ubah nomor WhatsApp, gambar QRIS, dan pilihan nominal tanpa coding.
         </p>
       </div>
       <div className="grid items-start gap-5 lg:grid-cols-2">
         <WhatsappForm current={data.whatsapp} />
         <QrisSettings source={data.qrisSource} url={data.qrisUrl} imageSrc={data.qrisImageSrc} />
       </div>
+      <NominalSettings current={data.nominals} />
     </div>
   );
 }
@@ -307,5 +319,88 @@ function QrisSettings({
         </form>
       )}
     </section>
+  );
+}
+
+function toText(list: number[]) {
+  return list.map((n) => formatNumber(n)).join(", ");
+}
+
+function NominalSettings({ current }: { current: NominalTable }) {
+  const save = useServerFn(saveNominals);
+  const refresh = useRefresh();
+  const [texts, setTexts] = useState<Record<ServiceId, string>>(
+    () =>
+      Object.fromEntries(SERVICES.map((s) => [s.id, toText(current[s.id])])) as Record<
+        ServiceId,
+        string
+      >,
+  );
+  const [state, setState] = useState<FormResult | null>(null);
+  const [pending, setPending] = useState(false);
+
+  return (
+    <form
+      className="flex flex-col gap-4 rounded-2xl border bg-card p-5"
+      onSubmit={async (e) => {
+        e.preventDefault();
+        const rows: { serviceId: ServiceId; nominals: number[] }[] = [];
+        for (const s of SERVICES) {
+          const parsed = parseNominalList(texts[s.id]);
+          if (!parsed.ok) {
+            setState({ ok: false, message: `${s.name}: ${parsed.error}` });
+            return;
+          }
+          rows.push({ serviceId: s.id, nominals: parsed.values });
+        }
+        setPending(true);
+        try {
+          const res = await save({ data: { rows } });
+          setState(res);
+          if (res.ok) {
+            setTexts(
+              Object.fromEntries(rows.map((r) => [r.serviceId, toText(r.nominals)])) as Record<
+                ServiceId,
+                string
+              >,
+            );
+            await refresh();
+          }
+        } catch {
+          setState({ ok: false, message: "Gagal menyimpan nominal." });
+        } finally {
+          setPending(false);
+        }
+      }}
+    >
+      <div>
+        <h2 className="flex items-center gap-2 font-bold">
+          <Hash className="size-5 text-primary" aria-hidden="true" />
+          Pilihan Nominal
+        </h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Angka yang muncul di langkah &quot;Pilih Nominal&quot;. Pisahkan dengan koma, contoh:
+          100, 200, 500, 1.000. Berlaku untuk semua platform.
+        </p>
+      </div>
+      <div className="grid gap-4 md:grid-cols-2">
+        {SERVICES.map((s) => (
+          <div key={s.id} className="flex flex-col gap-1.5">
+            <Label htmlFor={`nominal-${s.id}`}>{s.name}</Label>
+            <Input
+              id={`nominal-${s.id}`}
+              inputMode="numeric"
+              value={texts[s.id]}
+              onChange={(e) => setTexts((p) => ({ ...p, [s.id]: e.target.value }))}
+            />
+          </div>
+        ))}
+      </div>
+      <Status state={state} />
+      <Button type="submit" disabled={pending} className="md:self-start">
+        {pending && <Loader2 className="animate-spin" />}
+        Simpan Nominal
+      </Button>
+    </form>
   );
 }

@@ -140,6 +140,10 @@ function AdminVouchersPage() {
   );
 }
 
+function cleanCode(value: string) {
+  return value.toUpperCase().replace(/[^A-Z0-9_-]/g, "");
+}
+
 function toInt(value: string) {
   const s = value.trim();
   if (!s) return null;
@@ -149,7 +153,7 @@ function toInt(value: string) {
 
 function VoucherForm({ onCreated }: { onCreated: () => void }) {
   const create = useServerFn(createVoucher);
-  const empty = { code: "", value: "", maxDiscount: "", minOrder: "0", quota: "", expiresAt: "" };
+  const empty = { code: "", value: "", maxDiscount: "", minOrder: "", quota: "", expiresAt: "" };
   const [type, setType] = useState<"percent" | "fixed">("percent");
   const [f, setF] = useState(empty);
   const [state, setState] = useState<{ ok: boolean; message: string } | null>(null);
@@ -188,15 +192,15 @@ function VoucherForm({ onCreated }: { onCreated: () => void }) {
       }}
     >
       <h2 className="font-bold">Buat Voucher Baru</h2>
-      <Field label="Kode Voucher" id="code">
+      <Field label="Kode Voucher" id="code" hint="Huruf dan angka saja, contoh: DISKON50">
         <Input
           id="code"
           required
-          placeholder="HEMAT10"
+          placeholder="DISKON50"
           maxLength={40}
           className="uppercase"
           value={f.code}
-          onChange={(e) => setF((p) => ({ ...p, code: e.target.value.toUpperCase() }))}
+          onChange={(e) => setF((p) => ({ ...p, code: cleanCode(e.target.value) }))}
         />
       </Field>
 
@@ -238,28 +242,41 @@ function VoucherForm({ onCreated }: { onCreated: () => void }) {
           onChange={set("value")}
         />
       </Field>
-      {type === "percent" && (
-        <Field label="Maks. Potongan (Rp)" id="maxDiscount" hint="Kosongkan jika tanpa batas">
-          <Input
-            id="maxDiscount"
-            type="number"
-            min={0}
-            value={f.maxDiscount}
-            onChange={set("maxDiscount")}
-          />
-        </Field>
-      )}
-      <Field label="Minimal Order (Rp)" id="minOrder">
-        <Input id="minOrder" type="number" min={0} value={f.minOrder} onChange={set("minOrder")} />
-      </Field>
-      <div className="grid grid-cols-2 gap-3">
-        <Field label="Kuota Pemakaian" id="quota" hint="Kosong = tanpa batas">
-          <Input id="quota" type="number" min={1} value={f.quota} onChange={set("quota")} />
-        </Field>
-        <Field label="Berlaku Sampai" id="expiresAt" hint="Opsional">
-          <Input id="expiresAt" type="date" value={f.expiresAt} onChange={set("expiresAt")} />
-        </Field>
-      </div>
+      <details className="group rounded-xl border bg-muted/40 px-4 py-3">
+        <summary className="cursor-pointer text-sm font-semibold">
+          Pengaturan tambahan (opsional)
+        </summary>
+        <div className="mt-4 flex flex-col gap-4">
+          {type === "percent" && (
+            <Field label="Maks. Potongan (Rp)" id="maxDiscount" hint="Kosong = tanpa batas">
+              <Input
+                id="maxDiscount"
+                type="number"
+                min={0}
+                value={f.maxDiscount}
+                onChange={set("maxDiscount")}
+              />
+            </Field>
+          )}
+          <Field label="Minimal Order (Rp)" id="minOrder" hint="Kosong = tanpa minimal">
+            <Input
+              id="minOrder"
+              type="number"
+              min={0}
+              value={f.minOrder}
+              onChange={set("minOrder")}
+            />
+          </Field>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Kuota Pemakaian" id="quota" hint="Kosong = tanpa batas">
+              <Input id="quota" type="number" min={1} value={f.quota} onChange={set("quota")} />
+            </Field>
+            <Field label="Berlaku Sampai" id="expiresAt" hint="Kosong = selamanya">
+              <Input id="expiresAt" type="date" value={f.expiresAt} onChange={set("expiresAt")} />
+            </Field>
+          </div>
+        </div>
+      </details>
 
       {state?.message && (
         <p role="status" className={cn("text-sm", state.ok ? "text-success" : "text-destructive")}>

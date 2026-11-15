@@ -16,9 +16,12 @@ import {
   formatRupiah,
   getPlatform,
   newMemberDiscount,
+  nominalsFor,
   priceFor,
+  type NominalTable,
   type PlatformId,
   type PriceTable,
+  type ServiceId,
   type QualityId,
   type VoucherRule,
 } from "@/lib/catalog";
@@ -28,10 +31,12 @@ type Promo = { kind: "voucher"; code: string; rule: VoucherRule } | { kind: "new
 
 export function OrderForm({
   prices,
+  nominals,
   adminWhatsapp,
   qrisImageSrc,
 }: {
   prices: PriceTable;
+  nominals: NominalTable;
   adminWhatsapp: string;
   qrisImageSrc: string | null;
 }) {
@@ -40,7 +45,9 @@ export function OrderForm({
   const [serviceId, setServiceId] = useState<string>(platform.services[0]!.id);
   const service = platform.services.find((s) => s.id === serviceId) ?? platform.services[0]!;
   const [qualityId, setQualityId] = useState<QualityId>("C");
-  const [quantity, setQuantity] = useState(service.nominals[0]!);
+  const optionsFor = (id: ServiceId) => nominalsFor(nominals, id);
+  const serviceNominals = optionsFor(service.id);
+  const [quantity, setQuantity] = useState(serviceNominals[0]!);
   const [target, setTarget] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
   const [voucherInput, setVoucherInput] = useState("");
@@ -57,7 +64,7 @@ export function OrderForm({
   const checkNewMemberFn = useServerFn(checkNewMember);
   const createOrderFn = useServerFn(createOrder);
 
-  const effectiveQuantity = service.nominals.includes(quantity) ? quantity : service.nominals[0]!;
+  const effectiveQuantity = serviceNominals.includes(quantity) ? quantity : serviceNominals[0]!;
   const subtotal = priceFor(prices, service.id, qualityId, effectiveQuantity);
   const discount = !promo
     ? 0
@@ -73,14 +80,14 @@ export function OrderForm({
     setPlatformId(id);
     const nextService = next.services.find((s) => s.id === serviceId) ?? next.services[0]!;
     setServiceId(nextService.id);
-    setQuantity(nextService.nominals[0]!);
+    setQuantity(optionsFor(nextService.id)[0]!);
   }
 
   function selectService(id: string) {
     const next = platform.services.find((s) => s.id === id)!;
     if (next.target !== service.target) setTarget("");
     setServiceId(id);
-    setQuantity(next.nominals[0]!);
+    setQuantity(optionsFor(next.id)[0]!);
   }
 
   async function applyVoucher() {
@@ -355,7 +362,7 @@ export function OrderForm({
             aria-label="Nominal"
             className="grid grid-cols-2 gap-2 sm:grid-cols-3"
           >
-            {service.nominals.map((n) => {
+            {serviceNominals.map((n) => {
               const active = n === effectiveQuantity;
               return (
                 <button
