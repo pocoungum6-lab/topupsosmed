@@ -10,8 +10,8 @@
   "capability": "code: admin panel (orders, vouchers, settings)",
   "source": "app/admin",
   "outcome": "migrate",
-  "status": "implemented",
-  "next_action": "Verify signed-in admin pages once ADMIN_PASSWORD is set"
+  "status": "verified",
+  "next_action": "none"
  },
  {
   "capability": "schema: settings, vouchers, orders, qris image",
@@ -31,8 +31,8 @@
   "capability": "auth: admin password (ADMIN_PASSWORD, signed cookie)",
   "source": "lib/admin-auth.ts",
   "outcome": "keep shared admin password, signed session cookie",
-  "status": "pending",
-  "next_action": "User sets ADMIN_PASSWORD secret"
+  "status": "verified",
+  "next_action": "none"
  },
  {
   "capability": "storage: QRIS image upload",
